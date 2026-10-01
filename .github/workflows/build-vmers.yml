@@ -47,18 +47,11 @@ jobs:
             -o rom_tools/downloads/gsi.zip
 
           echo "=== GSI ZIP CONTENTS ==="
-          unzip -Z1 rom_tools/downloads/gsi.zip | sed -n '1,120p'
+          unzip -Z1 rom_tools/downloads/gsi.zip
 
-          SYSTEM_IMG_PATH="$(unzip -Z1 rom_tools/downloads/gsi.zip | grep -E '(^|/)system\\.img$' | head -n 1 || true)"
-
-          if [ -z "$SYSTEM_IMG_PATH" ]; then
-            echo "::error::system.img was not found inside the GSI ZIP"
-            exit 1
-          fi
-
-          echo "Found system image: $SYSTEM_IMG_PATH"
-
-          unzip -p rom_tools/downloads/gsi.zip "$SYSTEM_IMG_PATH" > rom_tools/input/system.img
+          echo "=== EXTRACTING system.img ==="
+          unzip -p rom_tools/downloads/gsi.zip system.img \
+            > rom_tools/input/system.img
 
           test -s rom_tools/input/system.img
           ls -lh rom_tools/input/system.img
