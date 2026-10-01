@@ -41,11 +41,27 @@ jobs:
         run: |
           set -euxo pipefail
           mkdir -p rom_tools/downloads rom_tools/input
+
           curl -L --fail --retry 5 --retry-delay 3 \
             "$GSI_URL" \
             -o rom_tools/downloads/gsi.zip
-          unzip -l rom_tools/downloads/gsi.zip | grep -E '(^|/)system\.img$'
-          unzip -j rom_tools/downloads/gsi.zip 'system.img' -d rom_tools/input
+
+          echo "=== GSI ZIP CONTENTS ==="
+          unzip -Z1 rom_tools/downloads/gsi.zip | sed -n '1,120p'
+
+          SYSTEM_IMG_PATH="$(unzip -Z1 rom_tools/downloads/gsi.zip | grep -E '(^|/)system\\.img$' | head -n 1 || true)"
+
+          if [ -z "$SYSTEM_IMG_PATH" ]; then
+            echo "::error::system.img was not found inside the GSI ZIP"
+            exit 1
+          fi
+
+          echo "Found system image: $SYSTEM_IMG_PATH"
+
+          unzip -p rom_tools/downloads/gsi.zip "$SYSTEM_IMG_PATH" > rom_tools/input/system.img
+
+          test -s rom_tools/input/system.img
+          ls -lh rom_tools/input/system.img
 
       - name: Prepare Vmers rootfs and package
         run: |
@@ -59,11 +75,15 @@ jobs:
         run: |
           set -euxo pipefail
           test -s roms/vmers_a15_arm64.7z
+
           7z t roms/vmers_a15_arm64.7z
-          echo "Archive:"
+
+          echo "=== FINAL ARCHIVE ==="
           ls -lh roms/vmers_a15_arm64.7z
-          echo "Rootfs entries:"
-          7z l roms/vmers_a15_arm64.7z | grep -E 'rootfs/(system/build\.prop|system/bin/init|system/framework/arm64/boot\.vdex|rom_info\.json)' || true
+
+          echo "=== ROOTFS CHECK ==="
+          7z l roms/vmers_a15_arm64.7z | grep -E \
+            'rootfs/(system/build\\.prop|system/bin/init|system/framework/arm64/boot\\.vdex|rom_info\\.json)' || true
 
       - name: Upload Vmers ROM
         uses: actions/upload-artifact@v4
