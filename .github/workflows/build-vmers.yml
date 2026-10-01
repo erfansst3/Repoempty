@@ -1,4 +1,4 @@
-name: Build Vmers Android 15 ARM64 ROM
+name: Build Vmers Android 14 ARM64 ROM
 
 on:
   push:
@@ -7,9 +7,9 @@ on:
   workflow_dispatch:
     inputs:
       gsi_url:
-        description: "Android 15 ARM64 GMS GSI ZIP URL"
+        description: "Android 14 ARM64 GMS GSI ZIP URL"
         required: true
-        default: "https://dl.google.com/developers/android/vic/images/gsi/gsi_gms_arm64-exp-AP3A.241005.015-12366759-0fdc93fe.zip"
+        default: "https://dl.google.com/developers/android/udc/images/gsi/gsi_gms_arm64-exp-UQ1A.231205.015-11084887-2026a0e7.zip"
         type: string
 
 permissions:
@@ -35,9 +35,9 @@ jobs:
             curl \
             unzip
 
-      - name: Download Android 15 GSI
+      - name: Download Android 14 GSI
         env:
-          GSI_URL: ${{ inputs.gsi_url || 'https://dl.google.com/developers/android/vic/images/gsi/gsi_gms_arm64-exp-AP3A.241005.015-12366759-0fdc93fe.zip' }}
+          GSI_URL: ${{ inputs.gsi_url || 'https://dl.google.com/developers/android/udc/images/gsi/gsi_gms_arm64-exp-UQ1A.231205.015-11084887-2026a0e7.zip' }}
         run: |
           set -euxo pipefail
           mkdir -p rom_tools/downloads rom_tools/input
