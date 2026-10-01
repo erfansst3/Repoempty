@@ -1,6 +1,9 @@
 name: Build Vmers Android 15 ARM64 ROM
 
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
     inputs:
       gsi_url:
@@ -23,22 +26,34 @@ jobs:
       - name: Install tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y             e2fsprogs             android-sdk-libsparse-utils             p7zip-full             util-linux             tar             curl             unzip
+          sudo apt-get install -y \
+            e2fsprogs \
+            android-sdk-libsparse-utils \
+            p7zip-full \
+            util-linux \
+            tar \
+            curl \
+            unzip
 
       - name: Download Android 15 GSI
         env:
-          GSI_URL: ${{ inputs.gsi_url }}
+          GSI_URL: ${{ inputs.gsi_url || 'https://dl.google.com/developers/android/vic/images/gsi/gsi_gms_arm64-exp-AP3A.241005.015-12366759-0fdc93fe.zip' }}
         run: |
           set -euxo pipefail
           mkdir -p rom_tools/downloads rom_tools/input
-          curl -L --fail --retry 5 --retry-delay 3             "$GSI_URL"             -o rom_tools/downloads/gsi.zip
+          curl -L --fail --retry 5 --retry-delay 3 \
+            "$GSI_URL" \
+            -o rom_tools/downloads/gsi.zip
           unzip -l rom_tools/downloads/gsi.zip | grep -E '(^|/)system\.img$'
-          unzip -j rom_tools/downloads/gsi.zip 'system.img'             -d rom_tools/input
+          unzip -j rom_tools/downloads/gsi.zip 'system.img' -d rom_tools/input
 
       - name: Prepare Vmers rootfs and package
         run: |
           set -euxo pipefail
-          python3 rom_tools/prepare_a15_gsi.py             --input rom_tools/input/system.img             --output roms/vmers_a15_arm64.7z             --work-dir rom_tools/work
+          python3 rom_tools/prepare_a15_gsi.py \
+            --input rom_tools/input/system.img \
+            --output roms/vmers_a15_arm64.7z \
+            --work-dir rom_tools/work
 
       - name: Verify final archive
         run: |
