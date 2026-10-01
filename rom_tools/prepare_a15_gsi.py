@@ -91,6 +91,13 @@ def extract_ext4_with_debugfs(image: Path, dst: Path) -> None:
         f"rdump / {dst}",
         str(image),
     ])
+    # debugfs restores filesystem ownership as root. Hand the extracted tree
+    # back to the workflow user before Python modifies or repacks it.
+    run([
+        "sudo", "chown", "-R",
+        f"{os.getuid()}:{os.getgid()}",
+        str(dst),
+    ])
 
 
 def copy_tree_from_mount(src: Path, dst: Path) -> None:
