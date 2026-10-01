@@ -71,20 +71,31 @@ def make_raw_image(src: Path, dst: Path) -> Path:
     )
 
 
-def mount_ro(image: Path, mountpoint: Path):
-    mountpoint.mkdir(parents=True, exist_ok=True)
-    run(["mount", "-o", "loop,ro", str(image), str(mountpoint)])
+def extract_ext4_with_debugfs(image: Path, dst: Path) -> None:
+    """
+    Extract an ext4 filesystem directly with e2fsprogs/debugfs.
 
+    GitHub-hosted runners do not reliably expose a usable loop device to
+    unprivileged workflow processes, so mounting system.img is avoided.
+    debugfs rdump works directly on an ext4 image and preserves symbolic
+    links, including links whose targets contain ../.
+    """
+    need("debugfs")
+    dst.mkdir(parents=True, exist_ok=True)
+    if any(dst.iterdir()):
+        raise RuntimeError(f"Refusing to extract into non-empty directory: {dst}")
 
-def umount(mountpoint: Path) -> None:
-    subprocess.run(["umount", str(mountpoint)], check=True)
+    # Run as root so debugfs can restore source uid/gid/mode metadata.
+    run([
+        "sudo", "debugfs", "-R",
+        f"rdump / {dst}",
+        str(image),
+    ])
 
 
 def copy_tree_from_mount(src: Path, dst: Path) -> None:
     """
-    Copy a mounted Android filesystem while preserving symlinks and modes.
-    GNU tar is used instead of 7z because 7z refuses ../ symlink targets
-    such as system/framework/arm64/boot.vdex.
+    Legacy helper retained for callers that already have a mounted tree.
     """
     dst.mkdir(parents=True, exist_ok=True)
     archive = dst.parent / ".rootfs-copy.tar"
@@ -113,7 +124,6 @@ def flatten_apex(apex_dir: Path, rootfs: Path, work: Path) -> int:
     for apex in sorted(src_dir.glob("*.apex")):
         name = apex.stem
         container_dir = work / "apex" / name
-        payload_mount = work / "apex-mnt" / name
         flattened = out_dir / name
 
         shutil.rmtree(container_dir, ignore_errors=True)
@@ -142,17 +152,7 @@ def flatten_apex(apex_dir: Path, rootfs: Path, work: Path) -> int:
 
         raw_payload = work / "apex" / f"{name}.raw.img"
         payload_image = make_raw_image(payload, raw_payload)
-
-        shutil.rmtree(payload_mount, ignore_errors=True)
-        payload_mount.mkdir(parents=True, exist_ok=True)
-        mounted = False
-        try:
-            mount_ro(payload_image, payload_mount)
-            mounted = True
-            copy_tree_from_mount(payload_mount, flattened)
-        finally:
-            if mounted:
-                umount(payload_mount)
+        extract_ext4_with_debugfs(payload_image, flattened)
 
         count += 1
 
@@ -299,7 +299,7 @@ def main() -> None:
     if not image.is_file():
         raise SystemExit(f"Input image not found: {image}")
 
-    for b in ("tar", "7z", "mount", "umount"):
+    for b in ("tar", "7z", "debugfs", "sudo"):
         need(b)
 
     work.mkdir(parents=True, exist_ok=True)
@@ -308,22 +308,15 @@ def main() -> None:
     rootfs.mkdir(parents=True)
 
     raw = work / "system.raw.img"
-    mountpoint = work / "system-mnt"
-    mounted = False
-
     try:
         actual = make_raw_image(image, raw)
 
-        log(f"Mounting system image: {actual}")
-        mount_ro(actual, mountpoint)
-        mounted = True
-
-        # Copy the complete Android system filesystem, including symlinks.
-        copy_tree_from_mount(mountpoint, rootfs)
-
+        log(f"Extracting ext4 image with debugfs: {actual}")
+        # Copy the complete Android system filesystem, including symlinks,
+        # without requiring a loop device or filesystem mount.
+        extract_ext4_with_debugfs(actual, rootfs)
     finally:
-        if mounted:
-            umount(mountpoint)
+        pass
 
     patch_build_prop(rootfs / "system" / "build.prop")
     sanitize_daemons(rootfs)
