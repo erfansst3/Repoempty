@@ -1,0 +1,59 @@
+name: Build Vmers Android 15 ARM64 ROM
+
+on:
+  workflow_dispatch:
+    inputs:
+      gsi_url:
+        description: "Android 15 ARM64 GMS GSI ZIP URL"
+        required: true
+        default: "https://dl.google.com/developers/android/vic/images/gsi/gsi_gms_arm64-exp-AP3A.241005.015-12366759-0fdc93fe.zip"
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  build-vmers-rom:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y             e2fsprogs             android-sdk-libsparse-utils             p7zip-full             util-linux             tar             curl             unzip
+
+      - name: Download Android 15 GSI
+        env:
+          GSI_URL: ${{ inputs.gsi_url }}
+        run: |
+          set -euxo pipefail
+          mkdir -p rom_tools/downloads rom_tools/input
+          curl -L --fail --retry 5 --retry-delay 3             "$GSI_URL"             -o rom_tools/downloads/gsi.zip
+          unzip -l rom_tools/downloads/gsi.zip | grep -E '(^|/)system\.img$'
+          unzip -j rom_tools/downloads/gsi.zip 'system.img'             -d rom_tools/input
+
+      - name: Prepare Vmers rootfs and package
+        run: |
+          set -euxo pipefail
+          python3 rom_tools/prepare_a15_gsi.py             --input rom_tools/input/system.img             --output roms/vmers_a15_arm64.7z             --work-dir rom_tools/work
+
+      - name: Verify final archive
+        run: |
+          set -euxo pipefail
+          test -s roms/vmers_a15_arm64.7z
+          7z t roms/vmers_a15_arm64.7z
+          echo "Archive:"
+          ls -lh roms/vmers_a15_arm64.7z
+          echo "Rootfs entries:"
+          7z l roms/vmers_a15_arm64.7z | grep -E 'rootfs/(system/build\.prop|system/bin/init|system/framework/arm64/boot\.vdex|rom_info\.json)' || true
+
+      - name: Upload Vmers ROM
+        uses: actions/upload-artifact@v4
+        with:
+          name: vmers-a15-arm64
+          path: roms/vmers_a15_arm64.7z
+          if-no-files-found: error
+          retention-days: 14
