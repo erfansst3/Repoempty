@@ -1,0 +1,14 @@
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:fillViewport="true" android:background="#F4F6FA">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="22dp" android:layoutDirection="locale">
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="VisionTap" android:textColor="#172033" android:textSize="30sp" android:textStyle="bold" android:layout_marginBottom="6dp"/>
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="تشخیص تصویر روی صفحه با تغییر اندازه و چرخش" android:textColor="#536078" android:textSize="15sp" android:layout_marginBottom="22dp"/>
+        <TextView android:id="@+id/tvTarget" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/target_none" android:textColor="#172033" android:textSize="14sp" android:padding="14dp" android:background="#FFFFFF" android:layout_marginBottom="12dp"/>
+        <Button android:id="@+id/btnChoose" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/choose_image"/>
+        <Button android:id="@+id/btnAccessibility" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/enable_accessibility" android:layout_marginTop="6dp"/>
+        <CheckBox android:id="@+id/checkAutoClick" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/auto_click" android:checked="true" android:layout_marginTop="8dp" android:padding="4dp"/>
+        <Button android:id="@+id/btnStart" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/start_scan" android:layout_marginTop="8dp"/>
+        <Button android:id="@+id/btnStop" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/stop_scan" android:layout_marginTop="4dp"/>
+        <TextView android:id="@+id/tvStatus" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/status_idle" android:textColor="#172033" android:textSize="15sp" android:padding="14dp" android:background="#FFFFFF" android:layout_marginTop="16dp"/>
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="برای کلیک خودکار، سرویس دسترس‌پذیری و اجازه ضبط صفحه لازم است." android:textColor="#68758B" android:textSize="12sp" android:layout_marginTop="16dp"/>
+    </LinearLayout>
+</ScrollView>
