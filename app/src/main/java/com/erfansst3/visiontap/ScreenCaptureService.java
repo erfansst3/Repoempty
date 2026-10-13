@@ -23,7 +23,7 @@ import android.os.IBinder;
 import android.os.SystemClock;
 import android.util.DisplayMetrics;
 import android.view.Display;
-import android.view.PixelFormat;
+import android.graphics.PixelFormat;
 import android.view.WindowManager;
 import java.io.File;
 import java.nio.ByteBuffer;
